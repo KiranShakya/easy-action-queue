@@ -1,6 +1,6 @@
 {
   "name": "easy-action-queue",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Easily queue some actions",
   "main": "src/ActionQueue.ts",
   "scripts": {
@@ -13,7 +13,7 @@
     "url": "git+https://github.com/KiranShakya/easy-action-queue.git"
   },
   "author": "Kiran Shakya",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/KiranShakya/easy-action-queue/issues"
   },
@@ -28,5 +28,11 @@
     "webpack": "^5.80.0",
     "webpack-cli": "^5.0.1",
     "webpack-dev-server": "^4.13.3"
-  }
+  },
+  "keywords": [
+    "Easy",
+    "Action",
+    "Queue",
+    "Queue"
+  ]
 }
