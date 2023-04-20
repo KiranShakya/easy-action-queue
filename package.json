@@ -1,0 +1,32 @@
+{
+  "name": "easy-action-queue",
+  "version": "1.0.0",
+  "description": "Easily queue some actions",
+  "main": "src/ActionQueue.ts",
+  "scripts": {
+    "build": "tsc",
+    "serve": "webpack-dev-server ./demo/main.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KiranShakya/easy-action-queue.git"
+  },
+  "author": "Kiran Shakya",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/KiranShakya/easy-action-queue/issues"
+  },
+  "homepage": "https://github.com/KiranShakya/easy-action-queue#readme",
+  "dependencies": {
+    "rxjs": "^7.8.0"
+  },
+  "devDependencies": {
+    "html-webpack-plugin": "^5.5.1",
+    "ts-loader": "^9.4.2",
+    "typescript": "^5.0.4",
+    "webpack": "^5.80.0",
+    "webpack-cli": "^5.0.1",
+    "webpack-dev-server": "^4.13.3"
+  }
+}
