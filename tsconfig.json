@@ -3,7 +3,7 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "outDir": "./dist",
+    "outDir": "./dist/easy-action-cache",
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
