@@ -3,7 +3,7 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "outDir": "./dist/easy-action-cache",
+    "outDir": "./dist/easy-action-queue",
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
@@ -14,6 +14,7 @@
     "target": "ES6",
     "typeRoots": ["node_modules/@types"],
     "lib": ["es2017", "dom", "esnext.asynciterable"],
-    "allowSyntheticDefaultImports": true
-  }
+    "allowSyntheticDefaultImports": true,
+  },
+  "exclude": [ "**/*.test.ts", "**/*.spec.ts", "demo" ]
 }

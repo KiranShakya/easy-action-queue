@@ -1,12 +1,16 @@
 {
   "name": "easy-action-queue",
-  "version": "1.0.2",
-  "description": "Easily queue some actions",
-  "main": "src/ActionQueue.ts",
+  "version": "2.0.0",
+  "description": "Easily queue actions so, that you have control over how many actions to concurrently trigger and when you want to cancel them.",
+  "main": "ActionQueue.js",
+  "types": "ActionQueue.d.ts",
+  "module": "ActionQueue.esm.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm run copy-package-json",
     "serve": "webpack-dev-server ./demo/main.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "copy-package-json": "copyfiles package.json dist/easy-action-queue",
+    "prepare": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -21,10 +25,17 @@
   "dependencies": {
     "rxjs": "^7.8.0"
   },
+  "peerDependencies": {
+    "rxjs": "^7.8.0"
+  },
   "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "copyfiles": "^2.4.1",
     "html-webpack-plugin": "^5.5.1",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
     "ts-loader": "^9.4.2",
-    "typescript": "^5.0.4",
+    "typescript": "^5.7.2",
     "webpack": "^5.80.0",
     "webpack-cli": "^5.0.1",
     "webpack-dev-server": "^4.13.3"
@@ -32,7 +43,9 @@
   "keywords": [
     "Easy",
     "Action",
-    "Queue",
     "Queue"
+  ],
+  "files": [
+    "dist/**/*"
   ]
 }
