@@ -1,5 +1,5 @@
 import { filter, interval, Observable, of, switchMap, take, timer } from "rxjs";
-import EasyActionQueue from "../src/ActionQueue";
+import EasyActionQueue from "easy-action-queue";
 
 const queue = new EasyActionQueue(2);
 const textarea: HTMLTextAreaElement = document.getElementById(

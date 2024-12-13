@@ -1,15 +1,14 @@
 {
   "name": "easy-action-queue",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Easily queue actions so, that you have control over how many actions to concurrently trigger and when you want to cancel them.",
-  "main": "ActionQueue.js",
-  "types": "ActionQueue.d.ts",
-  "module": "ActionQueue.esm.js",
+  "main": "dist/ActionQueue.js",
+  "types": "dist/ActionQueue.d.ts",
+  "module": "dist/ActionQueue.esm.js",
   "scripts": {
-    "build": "tsc && npm run copy-package-json",
+    "build": "tsc",
     "serve": "webpack-dev-server ./demo/main.ts",
     "test": "jest",
-    "copy-package-json": "copyfiles package.json dist/easy-action-queue",
     "prepare": "npm run build"
   },
   "repository": {
