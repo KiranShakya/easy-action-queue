@@ -1,4 +1,4 @@
-import { BehaviorSubject, of } from "rxjs";
+import { BehaviorSubject, of, Observable } from "rxjs";
 import EasyActionQueue from "./ActionQueue";
 
 describe("EasyActionQueue", () => {
@@ -141,5 +141,64 @@ describe("EasyActionQueue", () => {
   it("should handle zero concurrency gracefully", () => {
     const zeroConcurrencyQueue = new EasyActionQueue(0);
     expect(zeroConcurrencyQueue.concurrency).toBe(1);
+  });
+
+  it("should log a message when concurrency is set to less than 1", () => {
+    const consoleSpy = jest.spyOn(console, "info").mockImplementation(() => {});
+    const queue = new EasyActionQueue(0);
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "Concurrency must be a positive integer, using 1"
+    );
+    consoleSpy.mockRestore();
+  });
+
+  it("should reject actions that throw an error", async () => {
+    const action1 = jest.fn(() => {
+      throw new Error("Action 1 Error");
+    });
+    const action2 = jest.fn(() => Promise.reject("Action 2 Error"));
+
+    const result1 = queue.enqueue(action1);
+    const result2 = queue.enqueue(action2);
+
+    await expect(result1).rejects.toThrow("Action 1 Error");
+    await expect(result2).rejects.toBe("Action 2 Error");
+
+    expect(action1).toHaveBeenCalled();
+    expect(action2).toHaveBeenCalled();
+  });
+
+  it("should reject observable actions that emit an error", async () => {
+    const action1 = jest.fn(() => {
+      return new Observable((subscriber) => {
+        subscriber.error("Action 1 Observable Error");
+      });
+    });
+
+    const result1 = queue.enqueue(action1);
+
+    await expect(result1).rejects.toBe("Action 1 Observable Error");
+
+    expect(action1).toHaveBeenCalled();
+  });
+
+  it("should not block pending actions if one of the former actions failed or rejected", async () => {
+    const action1 = jest.fn(() => {
+      throw new Error("Action 1 Error");
+    });
+    const action2 = jest.fn(() => "result2");
+    const action3 = jest.fn(() => new Promise((resolve) => resolve("result3")));
+
+    const result1 = queue.enqueue(action1);
+    const result2 = queue.enqueue(action2);
+    const result3 = queue.enqueue(action3);
+
+    await expect(result1).rejects.toThrow("Action 1 Error");
+    await expect(result2).resolves.toBe("result2");
+    await expect(result3).resolves.toBe("result3");
+
+    expect(action1).toHaveBeenCalled();
+    expect(action2).toHaveBeenCalled();
+    expect(action3).toHaveBeenCalled();
   });
 });

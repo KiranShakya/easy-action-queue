@@ -1,127 +1,284 @@
-# Easy Action Queue
+# EasyActionQueue
 
-## Introduction
-During their careers, developers often need to manage the execution of actions concurrently. The **Easy Action Queue** class provides a robust solution for queuing actions, giving you control over the number of concurrent actions and the ability to cancel them when needed.
+EasyActionQueue is a simple action queue with concurrency control. It supports synchronous, asynchronous, and observable actions.
 
-## Getting Started
+## Installation
 
-### Installation
-First, install the package using npm:
 ```bash
 npm install easy-action-queue
 ```
 
-### Usage
-Once installed, you can create an instance of the EasyActionQueue:
+## Usage
 
-```javascript
-import EasyActionQueue from 'easy-action-queue';
+```typescript
+import EasyActionQueue from "easy-action-queue";
+import { of } from "rxjs";
 
-const queue = new EasyActionQueue();
+const queue = new EasyActionQueue(2);
+
+// Synchronous action
+queue.enqueue(() => "result1").then(console.log);
+
+// Asynchronous action
+queue.enqueue(() => new Promise((resolve) => setTimeout(() => resolve("result2"), 100))).then(console.log);
+
+// Observable action
+queue.enqueue(() => of("result3")).then(console.log);
 ```
 
-### Enqueuing Actions
-You can enqueue actions that return strings, promises, or observables. Make sure to import any required functions from RxJS:
+## API
 
-```javascript
-import { Observable, of, interval, timer } from 'rxjs';
-import { filter, take, switchMap } from 'rxjs/operators';
+### `constructor(concurrency: number = 1)`
 
-// Immediate Action
-queue
-  .enqueue<string, string>(() => "Simple Text Return")
-  .then((result) => console.log(result));
+Creates a new EasyActionQueue with the specified concurrency limit.
 
-// Immediate Action
-queue
-  .enqueue<void, void>(() => {
-    return;
-  })
-  .then(() => console.log("Action returned void"));
+### `enqueue<T>(action: () => T | Promise<T> | Observable<T>): Promise<T>`
 
-// Observable Action which waits for 8 seconds
-queue
-  .enqueue<number, Observable<number>>(() => {
-    return interval(1000).pipe(
-      filter((val) => val === 8),
-      take(10)
+Enqueues an action to be processed by the queue. Returns a promise that resolves with the result of the action.
+
+### `clearQueue()`
+
+Clears the queue and rejects all pending actions with the message "EasyActionQueue has been cleared!".
+
+### `getQueueSize(): number`
+
+Returns the current size of the queue.
+
+### `idleObs: Observable<boolean>`
+
+An observable that emits the idle state of the queue. Emits `true` when the queue is idle and `false` when it is processing actions.
+
+## Error Handling
+
+EasyActionQueue properly handles errors and rejections. If an action throws an error or returns a rejected promise, the promise returned by `enqueue` will be rejected with the error.
+
+Example:
+
+```typescript
+const queue = new EasyActionQueue(2);
+
+queue.enqueue(() => {
+  throw new Error("Action Error");
+}).catch(console.error); // Logs "Action Error"
+
+queue.enqueue(() => Promise.reject("Promise Rejection")).catch(console.error); // Logs "Promise Rejection"
+```
+
+## Testing
+
+The project includes a comprehensive test suite to ensure the correctness of the EasyActionQueue implementation. The tests cover various scenarios, including synchronous actions, asynchronous actions, observable actions, mixed actions, concurrency limits, queue clearing, idle state, zero concurrency, and error handling.
+
+To run the tests, use the following command:
+
+```bash
+npm test
+```
+
+Example test cases:
+
+```typescript
+import { of, Observable } from "rxjs";
+import EasyActionQueue from "./ActionQueue";
+
+describe("EasyActionQueue", () => {
+  let queue: EasyActionQueue;
+
+  beforeEach(() => {
+    queue = new EasyActionQueue(2);
+  });
+
+  it("should process synchronous actions correctly", async () => {
+    const action1 = jest.fn(() => "result1");
+    const action2 = jest.fn(() => "result2");
+
+    const result1 = queue.enqueue(action1);
+    const result2 = queue.enqueue(action2);
+
+    await expect(result1).resolves.toBe("result1");
+    await expect(result2).resolves.toBe("result2");
+
+    expect(action1).toHaveBeenCalled();
+    expect(action2).toHaveBeenCalled();
+  });
+
+  it("should process asynchronous actions correctly", async () => {
+    const action1 = jest.fn(
+      () => new Promise((resolve) => setTimeout(() => resolve("result1"), 100))
     );
-  })
-  .then((num) =>
-    console.log(`Waited for ${num} seconds to complete this action.`)
-  );
+    const action2 = jest.fn(
+      () => new Promise((resolve) => setTimeout(() => resolve("result2"), 200))
+    );
 
-// Promise Action which resolves after 1 second
-queue
-  .enqueue<string, Promise<string>>(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    return "Action 2 Completed";
-  })
-  .then((result) => console.log(result));
+    const result1 = queue.enqueue(action1);
+    const result2 = queue.enqueue(action2);
 
-// Observable Action which completes and returns a string after 3 seconds
-queue
-  .enqueue<string, Observable<string>>(() => {
-    return timer(3000).pipe(switchMap(() => of("Action 3 Completed")));
-  })
-  .then((result) => console.log(result));
+    await expect(result1).resolves.toBe("result1");
+    await expect(result2).resolves.toBe("result2");
 
-// Promise Action which waits for the previous action to complete
-queue
-  .enqueue<string, Promise<string>>(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    return "Action 4 Completed";
-  })
-  .then((result) => console.log(result));
+    expect(action1).toHaveBeenCalled();
+    expect(action2).toHaveBeenCalled();
+  });
 
-// Another Promise Action
-queue
-  .enqueue<string, Promise<string>>(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    return "Action 5 Completed";
-  })
-  .then((result) => console.log(result));
-```
+  it("should process observable actions correctly", async () => {
+    const action1 = jest.fn(() => of("result1"));
+    const action2 = jest.fn(() => of("result2"));
 
-### Output
-The console output will be:
-```
-Queue is not Idle
-Simple Text Return
-Action returned void
-Action 2 Completed
-Action 3 Completed
-Action 4 Completed
-Action 5 Completed
-Queue is Idle
-Waited for 8 seconds to complete this action.
-```
+    const result1 = queue.enqueue(action1);
+    const result2 = queue.enqueue(action2);
 
-### Adjusting Concurrency
-By default, the concurrency is set to 1, meaning actions will run sequentially. You can change the concurrency during initialization:
+    await expect(result1).resolves.toBe("result1");
+    await expect(result2).resolves.toBe("result2");
 
-```javascript
-const queueWith2ConcurrentActions = new EasyActionQueue(2);
-```
+    expect(action1).toHaveBeenCalled();
+    expect(action2).toHaveBeenCalled();
+  });
 
-This will allow two actions to be processed concurrently.
+  it("should handle mixed actions correctly", async () => {
+    const action1 = jest.fn(() => "result1");
+    const action2 = jest.fn(() => new Promise((resolve) => resolve("result2")));
+    const action3 = jest.fn(() => of("result3"));
 
-### Canceling The Queued Actions
-You can cancel the queued actions any time with the following command:
+    const result1 = queue.enqueue(action1);
+    const result2 = queue.enqueue(action2);
+    const result3 = queue.enqueue(action3);
 
-```javascript
-queueWith2ConcurrentActions.clearQueue();
-```
+    await expect(result1).resolves.toBe("result1");
+    await expect(result2).resolves.toBe("result2");
+    await expect(result3).resolves.toBe("result3");
 
-All the unexecuted and processing asynchronous actions will be rejected and will never resolve. However, please keep in mind that actions initiated by the callback function call, like fetch(), will still continue in the background. Only the response from such asynchronous actions will be ignored.
+    expect(action1).toHaveBeenCalled();
+    expect(action2).toHaveBeenCalled();
+    expect(action3).toHaveBeenCalled();
+  });
 
-### Idle Observable
-You can subscribe to the idle observable with the following command:
+  it("should respect concurrency limit", async () => {
+    const action1 = jest.fn(
+      () => new Promise((resolve) => setTimeout(() => resolve("result1"), 200))
+    );
+    const action2 = jest.fn(
+      () => new Promise((resolve) => setTimeout(() => resolve("result2"), 100))
+    );
+    const action3 = jest.fn(() => "result3");
 
-```javascript
-queueWith2ConcurrentActions.idleObs.subscribe((isIdle) => {
-  console.log(isIdle ? "Queue is Idle" : "Queue is not Idle");
+    const result1 = queue.enqueue(action1);
+    const result2 = queue.enqueue(action2);
+    const result3 = queue.enqueue(action3);
+
+    // Ensure the third action starts only after one of the first two completes
+    setTimeout(() => {
+      expect(action3).not.toHaveBeenCalled();
+    }, 50);
+
+    await expect(result1).resolves.toBe("result1");
+    await expect(result2).resolves.toBe("result2");
+    await expect(result3).resolves.toBe("result3");
+
+    expect(action1).toHaveBeenCalled();
+    expect(action2).toHaveBeenCalled();
+    expect(action3).toHaveBeenCalled();
+  });
+
+  it("should handle clearing the queue", async () => {
+    const action1 = jest.fn(
+      () => new Promise((resolve) => setTimeout(() => resolve("result1"), 200))
+    );
+    const action2 = jest.fn(
+      () => new Promise((resolve) => setTimeout(() => resolve("result2"), 300))
+    );
+    const action3 = jest.fn(
+      () => new Promise((resolve) => setTimeout(() => resolve("result3"), 300))
+    );
+    const result1 = queue.enqueue(action1);
+    const result2 = queue.enqueue(action2);
+    const result3 = queue.enqueue(action3);
+    setTimeout(() => {
+      queue.clearQueue();
+    }, 100);
+    await expect(result1).rejects.toBe("EasyActionQueue has been cleared!");
+    await expect(result2).rejects.toBe("EasyActionQueue has been cleared!");
+    await expect(result3).rejects.toBe("EasyActionQueue has been cleared!");
+  });
+
+  it("should emit idle state correctly", async () => {
+    const action1 = jest.fn(
+      () => new Promise((resolve) => setTimeout(() => resolve("result1"), 100))
+    );
+    const action2 = jest.fn(() => "result2");
+
+    const idleSpy = jest.fn();
+    queue.idleObs.subscribe(idleSpy);
+
+    const result1 = queue.enqueue(action1);
+    const result2 = queue.enqueue(action2);
+
+    await expect(result1).resolves.toBe("result1");
+    await expect(result2).resolves.toBe("result2");
+
+    expect(idleSpy).toHaveBeenLastCalledWith(true);
+  });
+
+  it("should handle zero concurrency gracefully", () => {
+    const zeroConcurrencyQueue = new EasyActionQueue(0);
+    expect(zeroConcurrencyQueue.concurrency).toBe(1);
+  });
+
+  it("should log a message when concurrency is set to less than 1", () => {
+    const consoleSpy = jest.spyOn(console, "info").mockImplementation(() => {});
+    const queue = new EasyActionQueue(0);
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "Concurrency must be a positive integer, using 1"
+    );
+    consoleSpy.mockRestore();
+  });
+
+  it("should reject actions that throw an error", async () => {
+    const action1 = jest.fn(() => {
+      throw new Error("Action 1 Error");
+    });
+    const action2 = jest.fn(() => Promise.reject("Action 2 Error"));
+
+    const result1 = queue.enqueue(action1);
+    const result2 = queue.enqueue(action2);
+
+    await expect(result1).rejects.toThrow("Action 1 Error");
+    await expect(result2).rejects.toBe("Action 2 Error");
+
+    expect(action1).toHaveBeenCalled();
+    expect(action2).toHaveBeenCalled();
+  });
+
+  it("should reject observable actions that emit an error", async () => {
+    const action1 = jest.fn(() => {
+      return new Observable((subscriber) => {
+        subscriber.error("Action 1 Observable Error");
+      });
+    });
+
+    const result1 = queue.enqueue(action1);
+
+    await expect(result1).rejects.toBe("Action 1 Observable Error");
+
+    expect(action1).toHaveBeenCalled();
+  });
+
+  it("should not block pending actions if one of the former actions failed or rejected", async () => {
+    const action1 = jest.fn(() => {
+      throw new Error("Action 1 Error");
+    });
+    const action2 = jest.fn(() => "result2");
+    const action3 = jest.fn(() => new Promise((resolve) => resolve("result3")));
+
+    const result1 = queue.enqueue(action1);
+    const result2 = queue.enqueue(action2);
+    const result3 = queue.enqueue(action3);
+
+    await expect(result1).rejects.toThrow("Action 1 Error");
+    await expect(result2).resolves.toBe("result2");
+    await expect(result3).resolves.toBe("result3");
+
+    expect(action1).toHaveBeenCalled();
+    expect(action2).toHaveBeenCalled();
+    expect(action3).toHaveBeenCalled();
+  });
 });
 ```
-
-This observable can be handy when you want to trigger specific events, such as deleting the queue instance immediately after the queue becomes idle to free up memory.
