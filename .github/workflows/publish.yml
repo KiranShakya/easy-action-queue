@@ -44,6 +44,9 @@ jobs:
           jq --arg version "$TAG_VERSION" '.version = $version' package.json > dist/package.json
 
       - name: Publish to npm
-        run: npm publish
+        run: |
+          for i in {1..5}; do
+            npm publish && break || sleep 30
+          done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
