@@ -43,6 +43,9 @@ jobs:
           TAG_VERSION=${GITHUB_REF#refs/tags/}
           jq --arg version "$TAG_VERSION" '.version = $version' package.json > dist/package.json
 
+      - name: Authenticate to npm
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+
       - name: Publish to npm
         run: |
           for i in {1..5}; do
