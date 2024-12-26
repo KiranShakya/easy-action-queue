@@ -16,5 +16,5 @@
     "lib": ["es2017", "dom", "esnext.asynciterable"],
     "allowSyntheticDefaultImports": true,
   },
-  "exclude": [ "**/*.test.ts", "**/*.spec.ts", "demo" ]
+  "exclude": [ "**/*.test.ts", "**/*.spec.ts", "demo", "dist" ]
 }
