@@ -4,6 +4,9 @@ EasyActionQueue is a simple action queue with concurrency control. It supports s
 
 ![Build Status](https://github.com/KiranShakya/easy-action-queue/actions/workflows/publish.yml/badge.svg)
 
+![Test Status](https://github.com/KiranShakya/easy-action-queue/actions/workflows/test.yml/badge.svg)
+
+
 ## Installation
 
 ```bash
