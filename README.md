@@ -2,6 +2,8 @@
 
 EasyActionQueue is a simple action queue with concurrency control. It supports synchronous, asynchronous, and observable actions.
 
+![Build Status](https://github.com/KiranShakya/easy-action-queue/actions/workflows/publish.yml/badge.svg)
+
 ## Installation
 
 ```bash
@@ -9,6 +11,8 @@ npm install easy-action-queue
 ```
 
 ## Usage
+
+### Basic Usage
 
 ```typescript
 import EasyActionQueue from "easy-action-queue";
@@ -24,6 +28,40 @@ queue.enqueue(() => new Promise((resolve) => setTimeout(() => resolve("result2")
 
 // Observable action
 queue.enqueue(() => of("result3")).then(console.log);
+```
+
+### Pausing and Resuming the Queue
+
+```typescript
+const queue = new EasyActionQueue(2);
+
+queue.enqueue(() => 'Task 1').then(result => console.log(result));
+queue.enqueue(() => 'Task 2').then(result => console.log(result));
+
+queue.pause();
+
+queue.enqueue(() => 'Task 3').then(result => console.log(result));
+queue.enqueue(() => 'Task 4').then(result => console.log(result));
+
+// Resume the queue after 2 seconds
+setTimeout(() => {
+  queue.resume();
+}, 2000);
+```
+
+### Updating Concurrency
+
+```typescript
+const queue = new EasyActionQueue(2);
+
+queue.enqueue(() => 'Task 1').then(result => console.log(result));
+queue.enqueue(() => 'Task 2').then(result => console.log(result));
+
+// Update concurrency to 1
+queue.updateConcurrency(1);
+
+queue.enqueue(() => 'Task 3').then(result => console.log(result));
+queue.enqueue(() => 'Task 4').then(result => console.log(result));
 ```
 
 ## API
@@ -47,6 +85,18 @@ Returns the current size of the queue.
 ### `idleObs: Observable<boolean>`
 
 An observable that emits the idle state of the queue. Emits `true` when the queue is idle and `false` when it is processing actions.
+
+### `pause()`
+
+Pauses the queue. No new actions will be processed until the queue is resumed.
+
+### `resume()`
+
+Resumes the queue. Actions will start being processed again.
+
+### `updateConcurrency(concurrency: number)`
+
+Updates the concurrency limit of the queue.
 
 ## Error Handling
 

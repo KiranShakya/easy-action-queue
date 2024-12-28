@@ -138,14 +138,10 @@ describe("EasyActionQueue", () => {
     expect(idleSpy).toHaveBeenLastCalledWith(true);
   });
 
-  it("should handle zero concurrency gracefully", () => {
+  it("should handle zero concurrency gracefully and log a warning message", () => {
+    const consoleSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
     const zeroConcurrencyQueue = new EasyActionQueue(0);
     expect(zeroConcurrencyQueue.concurrency).toBe(1);
-  });
-
-  it("should log a message when concurrency is set to less than 1", () => {
-    const consoleSpy = jest.spyOn(console, "info").mockImplementation(() => {});
-    const queue = new EasyActionQueue(0);
     expect(consoleSpy).toHaveBeenCalledWith(
       "Concurrency must be a positive integer, using 1"
     );
@@ -194,6 +190,58 @@ describe("EasyActionQueue", () => {
     const result3 = queue.enqueue(action3);
 
     await expect(result1).rejects.toThrow("Action 1 Error");
+    await expect(result2).resolves.toBe("result2");
+    await expect(result3).resolves.toBe("result3");
+
+    expect(action1).toHaveBeenCalled();
+    expect(action2).toHaveBeenCalled();
+    expect(action3).toHaveBeenCalled();
+  });
+
+  it("should pause and resume the queue", async () => {
+    const action1 = jest.fn(() => "result1");
+    const action2 = jest.fn(() => "result2");
+
+    queue.pause();
+    const result1 = queue.enqueue(action1);
+    const result2 = queue.enqueue(action2);
+    
+    await new Promise((r) => setTimeout(r, 50));
+
+    // Ensure actions are not processed while paused
+    expect(action1).not.toHaveBeenCalled();
+    expect(action2).not.toHaveBeenCalled();
+
+    queue.resume();
+
+    await expect(result1).resolves.toBe("result1");
+    await expect(result2).resolves.toBe("result2");
+
+    expect(action1).toHaveBeenCalled();
+    expect(action2).toHaveBeenCalled();
+  });
+
+  it("should update concurrency during runtime", async () => {
+    const action1 = jest.fn(
+      () => new Promise((resolve) => setTimeout(() => resolve("result1"), 200))
+    );
+    const action2 = jest.fn(
+      () => new Promise((resolve) => setTimeout(() => resolve("result2"), 100))
+    );
+    const action3 = jest.fn(() => "result3");
+
+    queue.updateConcurrency(1);
+
+    const result1 = queue.enqueue(action1);
+    const result2 = queue.enqueue(action2);
+    const result3 = queue.enqueue(action3);
+
+    // Ensure the third action starts only after the first one completes
+    setTimeout(() => {
+      expect(action3).not.toHaveBeenCalled();
+    }, 150);
+
+    await expect(result1).resolves.toBe("result1");
     await expect(result2).resolves.toBe("result2");
     await expect(result3).resolves.toBe("result3");
 

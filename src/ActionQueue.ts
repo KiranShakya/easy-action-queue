@@ -9,16 +9,17 @@ interface QueueItem<T> {
   action: () => T | Promise<T> | Observable<T>;
   resolve: (result: T) => void;
   reject: (reason: any) => void;
+  cleared?: boolean;
 }
 export default class EasyActionQueue {
   private readonly queue: Array<QueueItem<any>> = [];
   private readonly runningActions = new Set<QueueItem<any>>();
-
   private readonly idleSub = new BehaviorSubject<boolean>(false);
+  private paused = false;
 
-  constructor(public readonly concurrency: number = 1) {
+  constructor(public concurrency: number = 1) {
     if (!Number.isInteger(concurrency) || concurrency < 1) {
-      console.info("Concurrency must be a positive integer, using 1");
+      console.warn("Concurrency must be a positive integer, using 1");
       this.concurrency = 1;
     }
   }
@@ -31,6 +32,28 @@ export default class EasyActionQueue {
   // Method to get the current queue size
   getQueueSize(): number {
     return this.queue.length;
+  }
+
+  // Method to update the concurrency during runtime
+  updateConcurrency(newConcurrency: number) {
+    if (!Number.isInteger(newConcurrency) || newConcurrency < 1) {
+      throw new Error("Concurrency must be a positive integer");
+    }
+    this.concurrency = newConcurrency;
+    this.processQueue();
+  }
+
+  // Method to pause the queue
+  pause() {
+    this.paused = true;
+  }
+
+  // Method to resume the queue
+  resume() {
+    if (this.paused) {
+      this.paused = false;
+      this.processQueue();
+    }
   }
 
   /**
@@ -52,8 +75,8 @@ export default class EasyActionQueue {
 
   clearQueue() {
     const rejectAndResolve = (item: QueueItem<any>) => {
+      item.cleared = true;
       item.reject("EasyActionQueue has been cleared!");
-      item.resolve = () => {};
     };
 
     this.runningActions.forEach(rejectAndResolve);
@@ -69,6 +92,8 @@ export default class EasyActionQueue {
   }
 
   private async processQueue<T, R>(): Promise<void> {
+    if (this.paused) return;
+
     while (
       this.runningActions.size < this.concurrency &&
       this.queue.length > 0
@@ -81,19 +106,19 @@ export default class EasyActionQueue {
           response
             .then((result: R) => this.handleResponse<T, R>(result, item))
             .catch((error: unknown) =>
-              this.handleRejection<T, R>(error, item)
+              this.handleRejection<T, R>(error || "Unknown error", item)
             );
         } else if (response instanceof Observable) {
           firstValueFrom(response)
             .then((result: R) => this.handleResponse<T, R>(result, item))
             .catch((error: unknown) =>
-              this.handleRejection<T, R>(error, item)
+              this.handleRejection<T, R>(error || "Unknown error", item)
             );
         } else {
           this.handleResponse<T, R>(response as R, item);
         }
       } catch (error: unknown) {
-        this.handleRejection<T, R>(error, item);
+        this.handleRejection<T, R>(error || "Unknown error", item);
       }
     }
   }
@@ -112,6 +137,7 @@ export default class EasyActionQueue {
     error?: any
   ) {
     this.runningActions.delete(item);
+    if (item.cleared) return;
     if (error) {
       item.reject(error);
     } else {

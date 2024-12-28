@@ -1,7 +1,7 @@
 {
   "name": "easy-action-queue",
-  "version": "2.0.2",
-  "description": "Easily queue actions so, that you have control over how many actions to concurrently trigger and when you want to cancel them.",
+  "version": "2.0.4",
+  "description": "A lightweight library to queue and manage actions with configurable concurrency, supporting synchronous, asynchronous, and observable actions.",
   "main": "ActionQueue.js",
   "types": "ActionQueue.d.ts",
   "module": "ActionQueue.esm.js",
@@ -42,6 +42,11 @@
   "keywords": [
     "Easy",
     "Action",
-    "Queue"
+    "Queue",
+    "Concurrency",
+    "Asynchronous",
+    "Observable",
+    "Task Management",
+    "RxJS"
   ]
 }

@@ -41,9 +41,12 @@ jobs:
       - name: Copy package.json to dist
         run: cp package.json dist/
 
+      - name: Copy README.md to dist
+        run: cp README.md dist/
+
       - name: Update version in dist/package.json
         run: |
-          TAG_VERSION=${GITHUB_REF#refs/tags/}
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
           jq --arg version "$TAG_VERSION" '.version = $version' dist/package.json > dist/package.json.tmp && mv dist/package.json.tmp dist/package.json
 
       - name: Authenticate to npm
